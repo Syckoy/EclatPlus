@@ -157,16 +157,75 @@ internal sealed class MainForm : Form
             _trayIcon.Dispose();
         };
 
-        Shown += (_, _) =>
+        Shown += async (_, _) =>
         {
             ApplyCurrent();
             if (startInTray)
             {
                 HideToTray();
             }
+
+            await CheckForUpdateOnLaunch();
         };
 
         UpdateLabels();
+    }
+
+    private async Task CheckForUpdateOnLaunch()
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var update = await UpdateCheck.TryGetUpdateAsync(timeout.Token);
+            if (update is null || IsDisposed)
+            {
+                return;
+            }
+
+            ShowUpdateAvailable(update);
+        }
+        catch
+        {
+            // Hors-ligne ou GitHub indisponible : on n’interrompt pas le lancement.
+        }
+    }
+
+    private void ShowUpdateAvailable(UpdateInfo update)
+    {
+        var text =
+            $"Une nouvelle version est disponible : {update.Remote}\n" +
+            $"Tu as actuellement : {UpdateCheck.LocalVersion}\n\n" +
+            "Tes réglages ne sont pas modifiés.\n" +
+            "Ouvrir la page GitHub ?";
+
+        if (!Visible)
+        {
+            _tray.ShowBalloonTip(4000, "Yeshua", $"Mise à jour {update.Remote} disponible.", ToolTipIcon.Info);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            this,
+            text,
+            "Yeshua — mise à jour",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Information);
+
+        if (answer == DialogResult.Yes)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = update.Url,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                // ignore
+            }
+        }
     }
 
     private BrightButton MakePreset(string name, int value, int x, int y)
