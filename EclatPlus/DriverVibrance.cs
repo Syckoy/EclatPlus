@@ -9,6 +9,7 @@ namespace EclatPlus;
 internal sealed class DriverVibrance : IDisposable
 {
     private readonly IGpuVibrance? _backend;
+    private int? _lastPercent;
     private bool _disposed;
 
     public string BackendName => _backend?.Name ?? "Aucun";
@@ -37,10 +38,25 @@ internal sealed class DriverVibrance : IDisposable
         }
 
         percent = Math.Clamp(percent, 0, 100);
-        return _backend.ApplyPercent(percent);
+        if (_lastPercent == percent)
+        {
+            return true;
+        }
+
+        bool ok = _backend.ApplyPercent(percent);
+        if (ok)
+        {
+            _lastPercent = percent;
+        }
+
+        return ok;
     }
 
-    public void Restore() => _backend?.Restore();
+    public void Restore()
+    {
+        _lastPercent = null;
+        _backend?.Restore();
+    }
 
     public void Dispose()
     {

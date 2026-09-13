@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace EclatPlus;
 
-internal sealed record UpdateInfo(Version Remote, string Url);
+internal sealed record UpdateInfo(Version Remote, string PageUrl, string? DownloadUrl);
 
 /// <summary>
 /// Vérifie GitHub une seule fois au lancement. Ne lit ni n’écrit les réglages utilisateur.
@@ -16,7 +16,8 @@ internal static class UpdateCheck
     private const string ReleasesUrl = "https://api.github.com/repos/Syckoy/EclatPlus/releases/latest";
     private const string VersionFileUrl = "https://raw.githubusercontent.com/Syckoy/EclatPlus/main/version.json";
 
-    private static readonly HttpClient Http = CreateClient();
+    public static HttpClient Http { get; } = CreateClient(TimeSpan.FromSeconds(8));
+    public static HttpClient DownloadHttp { get; } = CreateClient(TimeSpan.FromMinutes(3));
 
     public static Version LocalVersion { get; } = ReadLocalVersion();
 
@@ -57,8 +58,8 @@ internal static class UpdateCheck
                 return null;
             }
 
-            var url = string.IsNullOrWhiteSpace(release.HtmlUrl) ? RepoUrl : release.HtmlUrl;
-            return new UpdateInfo(version, url);
+            var page = string.IsNullOrWhiteSpace(release.HtmlUrl) ? RepoUrl : release.HtmlUrl;
+            return new UpdateInfo(version, page, PickAsset(release.Assets));
         }
         catch
         {
@@ -90,8 +91,8 @@ internal static class UpdateCheck
                 return null;
             }
 
-            var url = string.IsNullOrWhiteSpace(file.Url) ? RepoUrl : file.Url;
-            return new UpdateInfo(version, url);
+            var page = string.IsNullOrWhiteSpace(file.Url) ? RepoUrl : file.Url;
+            return new UpdateInfo(version, page, string.IsNullOrWhiteSpace(file.Download) ? null : file.Download);
         }
         catch
         {
@@ -99,7 +100,33 @@ internal static class UpdateCheck
         }
     }
 
-    private static Version? ParseVersion(string raw)
+    private static string? PickAsset(List<GitHubAsset>? assets)
+    {
+        if (assets is null || assets.Count == 0)
+        {
+            return null;
+        }
+
+        var zipNamed = assets.FirstOrDefault(a =>
+            a.Name is not null && a.Name.Equals("EclatPlus.zip", StringComparison.OrdinalIgnoreCase));
+        if (zipNamed?.BrowserDownloadUrl is not null)
+        {
+            return zipNamed.BrowserDownloadUrl;
+        }
+
+        var zip = assets.FirstOrDefault(a =>
+            a.Name is not null && a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+        if (zip?.BrowserDownloadUrl is not null)
+        {
+            return zip.BrowserDownloadUrl;
+        }
+
+        var exe = assets.FirstOrDefault(a =>
+            a.Name is not null && a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        return exe?.BrowserDownloadUrl;
+    }
+
+    internal static Version? ParseVersion(string raw)
     {
         var text = raw.Trim();
         if (text.StartsWith("v", StringComparison.OrdinalIgnoreCase))
@@ -122,9 +149,9 @@ internal static class UpdateCheck
         return Version.TryParse(info, out var version) ? version : new Version(1, 0, 0);
     }
 
-    private static HttpClient CreateClient()
+    private static HttpClient CreateClient(TimeSpan timeout)
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+        var client = new HttpClient { Timeout = timeout };
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("EclatPlus", "1.0"));
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         return client;
@@ -142,6 +169,18 @@ internal static class UpdateCheck
 
         [JsonPropertyName("html_url")]
         public string? HtmlUrl { get; set; }
+
+        [JsonPropertyName("assets")]
+        public List<GitHubAsset>? Assets { get; set; }
+    }
+
+    private sealed class GitHubAsset
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("browser_download_url")]
+        public string? BrowserDownloadUrl { get; set; }
     }
 
     private sealed class VersionFile
@@ -151,5 +190,8 @@ internal static class UpdateCheck
 
         [JsonPropertyName("url")]
         public string? Url { get; set; }
+
+        [JsonPropertyName("download")]
+        public string? Download { get; set; }
     }
 }

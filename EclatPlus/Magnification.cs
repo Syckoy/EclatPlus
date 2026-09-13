@@ -35,12 +35,30 @@ internal static class Magnification
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool MagSetFullscreenColorEffect(ref MagColorEffect effect);
 
+    [DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool MagSetFullscreenUseBitmapSmoothing(bool useBitmapSmoothing);
+
     public static bool Available { get; private set; }
 
-    public static bool Initialize()
+    private static float[]? _lastMatrix;
+
+    public static bool EnsureEnabled()
     {
-        Available = MagInitialize();
-        return Available;
+        if (Available)
+        {
+            return true;
+        }
+
+        if (!MagInitialize())
+        {
+            return false;
+        }
+
+        MagSetFullscreenUseBitmapSmoothing(false);
+        Available = true;
+        _lastMatrix = null;
+        return true;
     }
 
     public static void Shutdown()
@@ -50,19 +68,48 @@ internal static class Magnification
             return;
         }
 
-        Apply(ColorScience.Identity());
         MagUninitialize();
         Available = false;
+        _lastMatrix = null;
     }
 
     public static bool Apply(float[] matrix)
     {
-        if (!Available)
+        if (!EnsureEnabled())
         {
             return false;
         }
 
+        if (_lastMatrix is not null && MatricesEqual(_lastMatrix, matrix))
+        {
+            return true;
+        }
+
         var effect = MagColorEffect.FromRowMajor(matrix);
-        return MagSetFullscreenColorEffect(ref effect);
+        if (!MagSetFullscreenColorEffect(ref effect))
+        {
+            return false;
+        }
+
+        _lastMatrix = (float[])matrix.Clone();
+        return true;
+    }
+
+    private static bool MatricesEqual(float[] a, float[] b)
+    {
+        if (a.Length != b.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (Math.Abs(a[i] - b[i]) > 0.0001f)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

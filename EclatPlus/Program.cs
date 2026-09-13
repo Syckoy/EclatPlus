@@ -8,9 +8,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-        Magnification.Initialize();
         using var vibrance = new DriverVibrance();
-
         Application.ApplicationExit += (_, _) => Magnification.Shutdown();
 
         var startInTray = args.Any(a => string.Equals(a, "--tray", StringComparison.OrdinalIgnoreCase));

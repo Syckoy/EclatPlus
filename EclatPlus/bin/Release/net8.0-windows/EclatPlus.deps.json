@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "EclatPlus/1.0.0": {
+      "EclatPlus/1.1.0": {
         "runtime": {
           "EclatPlus.dll": {}
         }
@@ -14,7 +14,7 @@
     }
   },
   "libraries": {
-    "EclatPlus/1.0.0": {
+    "EclatPlus/1.1.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

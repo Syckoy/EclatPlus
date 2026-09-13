@@ -11,6 +11,9 @@ internal sealed class MainForm : Form
     private readonly NotifyIcon _tray;
     private readonly Label _status;
     private readonly Icon _trayIcon;
+    private readonly System.Windows.Forms.Timer _saveTimer;
+    private FullscreenGuard? _guard;
+    private bool _gameFullscreen;
     private bool _exit;
 
     public MainForm(DriverVibrance vibrance, bool startInTray)
@@ -149,9 +152,33 @@ internal sealed class MainForm : Form
         menu.Items.Add("Quitter", null, (_, _) => ExitApp());
         _tray.ContextMenuStrip = menu;
 
+        _saveTimer = new System.Windows.Forms.Timer { Interval = 500 };
+        _saveTimer.Tick += (_, _) =>
+        {
+            _saveTimer.Stop();
+            _settings.Eclat = _eclat.Value;
+            _settings.Save();
+        };
+
+        HandleCreated += (_, _) =>
+        {
+            _guard = new FullscreenGuard(Handle);
+            _guard.FullscreenChanged += fullscreen =>
+            {
+                _gameFullscreen = fullscreen;
+                if (IsHandleCreated)
+                {
+                    BeginInvoke(ApplyCurrent);
+                }
+            };
+        };
+
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
+            _saveTimer.Stop();
+            _saveTimer.Dispose();
+            _guard?.Dispose();
             _tray.Visible = false;
             _tray.Dispose();
             _trayIcon.Dispose();
@@ -192,17 +219,17 @@ internal sealed class MainForm : Form
 
     private void ShowUpdateAvailable(UpdateInfo update)
     {
+        if (!Visible)
+        {
+            ShowFromTray();
+        }
+
+        bool canInstall = !string.IsNullOrWhiteSpace(update.DownloadUrl);
         var text =
             $"Une nouvelle version est disponible : {update.Remote}\n" +
             $"Tu as actuellement : {UpdateCheck.LocalVersion}\n\n" +
             "Tes réglages ne sont pas modifiés.\n" +
-            "Ouvrir la page GitHub ?";
-
-        if (!Visible)
-        {
-            _tray.ShowBalloonTip(4000, "Yeshua", $"Mise à jour {update.Remote} disponible.", ToolTipIcon.Info);
-            return;
-        }
+            (canInstall ? "Installer la mise à jour maintenant ?" : "Ouvrir la page GitHub pour la télécharger ?");
 
         var answer = MessageBox.Show(
             this,
@@ -211,20 +238,55 @@ internal sealed class MainForm : Form
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Information);
 
-        if (answer == DialogResult.Yes)
+        if (answer != DialogResult.Yes)
         {
-            try
+            return;
+        }
+
+        if (canInstall)
+        {
+            _ = InstallUpdate(update);
+            return;
+        }
+
+        OpenUrl(update.PageUrl);
+    }
+
+    private async Task InstallUpdate(UpdateInfo update)
+    {
+        try
+        {
+            UseWaitCursor = true;
+            await SelfUpdate.ApplyAsync(update, null, CancellationToken.None);
+            _exit = true;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(
+                this,
+                "La mise à jour n’a pas pu s’installer :\n" + ex.Message + "\n\nOuverture de GitHub.",
+                "Yeshua",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            OpenUrl(update.PageUrl);
+        }
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = update.Url,
-                    UseShellExecute = true
-                });
-            }
-            catch
-            {
-                // ignore
-            }
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // ignore
         }
     }
 
@@ -254,8 +316,8 @@ internal sealed class MainForm : Form
     {
         UpdateLabels();
         ApplyCurrent();
-        _settings.Eclat = _eclat.Value;
-        _settings.Save();
+        _saveTimer.Stop();
+        _saveTimer.Start();
     }
 
     private void UpdateLabels() => _eclatValue.Text = $"{_eclat.Value}";
@@ -272,13 +334,16 @@ internal sealed class MainForm : Form
         int driverPercent = Math.Clamp(value, 0, 100);
         _vibrance.ApplyPercent(driverPercent);
 
-        // Au-dessus de 50, on rebooste vraiment les couleurs (plus fort que le panneau GPU).
         float amount = 1f + Math.Max(0, value - 50) / 75f;
-        bool useExtra = !jeux && value > 50;
+        bool useExtra = !jeux && value > 50 && !_gameFullscreen;
 
-        if (Magnification.Available)
+        if (useExtra)
         {
-            Magnification.Apply(useExtra ? ColorScience.DigitalVibrance(amount) : ColorScience.Identity());
+            Magnification.Apply(ColorScience.DigitalVibrance(amount));
+        }
+        else
+        {
+            Magnification.Shutdown();
         }
 
         if (value <= 50)
@@ -289,9 +354,13 @@ internal sealed class MainForm : Form
         {
             _status.Text = $"Éclat pilote {driverPercent}% — max officiel NVIDIA/AMD, pour les jeux.";
         }
+        else if (_gameFullscreen)
+        {
+            _status.Text = $"Jeu plein écran : Loupe Windows coupée (FPS) · éclat pilote {driverPercent}%.";
+        }
         else
         {
-            _status.Text = $"Éclat {value} — plus coloré que NVIDIA/AMD, orange reste orange.\nCoche « Limiter au pilote » avant Valorant / Apex / Fortnite.";
+            _status.Text = $"Éclat {value} — plus coloré que NVIDIA/AMD, orange reste orange.";
         }
 
         _status.ForeColor = Color.FromArgb(140, 220, 160);
