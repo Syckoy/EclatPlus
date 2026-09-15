@@ -1,0 +1,24 @@
+COMMENT METTRE ÇA SUR GITHUB
+=============================
+
+Le dossier est déjà prêt. Tu as 2 choses à envoyer, pas la même.
+
+1) LE CODE (la page du projet)
+   Ouvre : https://github.com/Syckoy/EclatPlus
+   Clique "Add file" puis "Upload files"
+   Glisse TOUT ce qui est à la racine de ce dossier
+   (les .cs, README.md, version.json, EclatPlus.csproj, etc.)
+   SAUF le sous-dossier POUR-LA-RELEASE
+   Clique "Commit changes"
+
+2) LA MISE À JOUR AUTOMATIQUE (le zip)
+   Toujours sur GitHub : "Releases" à droite
+   "Create a new release"
+   Tag : v1.1.0
+   Titre : Yeshua 1.1.0
+   Glisse le fichier : POUR-LA-RELEASE\EclatPlus.zip
+   (le nom doit rester exactement EclatPlus.zip)
+   Clique "Publish release"
+
+Après ça, au prochain lancement, l’appli verra la mise à jour.
+Tes réglages (éclat, Windows, etc.) ne sont pas dans ce dossier : ils restent sur ton PC.
