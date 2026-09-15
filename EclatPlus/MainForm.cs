@@ -12,8 +12,6 @@ internal sealed class MainForm : Form
     private readonly Label _status;
     private readonly Icon _trayIcon;
     private readonly System.Windows.Forms.Timer _saveTimer;
-    private FullscreenGuard? _guard;
-    private bool _gameFullscreen;
     private bool _exit;
 
     public MainForm(DriverVibrance vibrance, bool startInTray)
@@ -160,25 +158,11 @@ internal sealed class MainForm : Form
             _settings.Save();
         };
 
-        HandleCreated += (_, _) =>
-        {
-            _guard = new FullscreenGuard(Handle);
-            _guard.FullscreenChanged += fullscreen =>
-            {
-                _gameFullscreen = fullscreen;
-                if (IsHandleCreated)
-                {
-                    BeginInvoke(ApplyCurrent);
-                }
-            };
-        };
-
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
             _saveTimer.Stop();
             _saveTimer.Dispose();
-            _guard?.Dispose();
             _tray.Visible = false;
             _tray.Dispose();
             _trayIcon.Dispose();
@@ -335,7 +319,7 @@ internal sealed class MainForm : Form
         _vibrance.ApplyPercent(driverPercent);
 
         float amount = 1f + Math.Max(0, value - 50) / 75f;
-        bool useExtra = !jeux && value > 50 && !_gameFullscreen;
+        bool useExtra = !jeux && value > 50;
 
         if (useExtra)
         {
@@ -354,13 +338,9 @@ internal sealed class MainForm : Form
         {
             _status.Text = $"Éclat pilote {driverPercent}% — max officiel NVIDIA/AMD, pour les jeux.";
         }
-        else if (_gameFullscreen)
-        {
-            _status.Text = $"Jeu plein écran : Loupe Windows coupée (FPS) · éclat pilote {driverPercent}%.";
-        }
         else
         {
-            _status.Text = $"Éclat {value} — plus coloré que NVIDIA/AMD, orange reste orange.";
+            _status.Text = $"Éclat {value} — plein écran inclus, orange reste orange.";
         }
 
         _status.ForeColor = Color.FromArgb(140, 220, 160);

@@ -11,7 +11,7 @@ Application Windows pour augmenter **l’éclat numérique** : les couleurs devi
 - Démarrage avec Windows, icône dans la barre d’état
 - Vérification de mise à jour **uniquement au lancement**, installation depuis l’appli
 - Les réglages utilisateur ne sont pas touchés par la mise à jour
-- En jeu plein écran / bordless, le moteur Loupe Windows est coupé pour ne pas perdre de FPS (l’éclat visuel de l’appli ne change pas)
+- En **plein écran** (KovaaK’s, Apex, etc.), l’éclat extra reste appliqué. Quelques FPS peuvent partir ; le gros crash de perfs venait d’une Loupe allumée même à l’arrêt.
 
 ## Jeux (Valorant, Apex, Fortnite)
 
@@ -21,7 +21,7 @@ Coche cette case **avant** de lancer Valorant, Apex ou Fortnite. Décoche-la pou
 
 Aucun éditeur ne peut garantir un ban à 0 %. Ce n’est pas un outil de triche ; reste dans le mode pilote en compétitif si tu veux rester aligné avec le panneau officiel.
 
-En **plein écran exclusif**, seul le réglage pilote s’applique. En fenêtré / bordless, l’éclat étendu peut s’appliquer aussi.
+L’éclat extra vise tout l’écran, y compris en jeu. Si un titre en **plein écran exclusif** ignore encore l’effet, passe en bordless. Pour zéro surcoût Loupe, coche **Limiter au pilote**.
 
 ## Utilisation
 
