@@ -1,0 +1,14 @@
+C:\Users\bouys\Projects\EclatPlus\bin\Release\net8.0-windows\EclatPlus.exe
+C:\Users\bouys\Projects\EclatPlus\bin\Release\net8.0-windows\EclatPlus.deps.json
+C:\Users\bouys\Projects\EclatPlus\bin\Release\net8.0-windows\EclatPlus.runtimeconfig.json
+C:\Users\bouys\Projects\EclatPlus\bin\Release\net8.0-windows\EclatPlus.dll
+C:\Users\bouys\Projects\EclatPlus\bin\Release\net8.0-windows\EclatPlus.pdb
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.AssemblyInfoInputs.cache
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.AssemblyInfo.cs
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.csproj.CoreCompileInputs.cache
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.dll
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\refint\EclatPlus.dll
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.pdb
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\EclatPlus.genruntimeconfig.cache
+C:\Users\bouys\Projects\EclatPlus\obj\Release\net8.0-windows\ref\EclatPlus.dll
